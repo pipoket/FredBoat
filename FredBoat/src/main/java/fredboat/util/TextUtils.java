@@ -157,9 +157,9 @@ public class TextUtils {
                 .thenApply(json -> json.getString("key"));
     }
 
-    private static CompletionStage<String> postToWastebin(String body) {
+    private static CompletionStage<String> postToHastebin(String body) {
         var creds = Launcher.Companion.getBotController().getCredentials();
-        return postToHasteBasedService("https://wastebin.party/documents", body,
+        return postToHasteBasedService("https://hastebin.com/documents", body,
                 Optional.of(creds.getWastebinUser()), Optional.of(creds.getWastebinPass()));
     }
 
@@ -173,10 +173,10 @@ public class TextUtils {
      * Optional return type
      */
     public static CompletionStage<Optional<String>> postToPasteService(String body) {
-        return postToWastebin(body)
-                .thenApply(key -> Optional.of("https://wastebin.party/" + key))
+        return postToHastebin(body)
+                .thenApply(key -> Optional.of("https://hastebin.com/" + key))
                 .exceptionally(t -> {
-                    log.error("Could not post to wastebin", t);
+                    log.error("Could not post to hastebin", t);
                     return Optional.empty();
                 })
                 .thenCompose(url -> {
