@@ -62,23 +62,42 @@ public class ListCommand extends JCommand implements IMusicCommand {
             return;
         }
 
-        MessageBuilder mb = localMessageBuilder();
-
         int page = 1;
+        int pageSize = PAGE_SIZE;
         if (context.hasArguments()) {
-            try {
-                page = Integer.valueOf(context.getArgs()[0]);
-            } catch (NumberFormatException ignored) {}
+            if (context.getArgs().length == 1) {
+                String arg = context.getArgs()[0];
+                try {
+                    page = Integer.valueOf(arg);
+                } catch (NumberFormatException ignored) {}
+
+                if (arg.compareToIgnoreCase("all") == 0) {
+                    pageSize = Integer.MAX_VALUE;
+                }
+            }
+
+            if (context.getArgs().length == 2) {
+                try {
+                    page = Integer.valueOf(context.getArgs()[0]);
+                } catch (NumberFormatException ignored) {}
+
+                try {
+                    pageSize = Integer.valueOf(context.getArgs()[1]);
+                } catch (NumberFormatException ignored) {}
+            }
         }
 
+
         int tracksCount = player.getTrackCount();
-        int maxPages = (int) Math.ceil(((double) tracksCount - 1d)) / PAGE_SIZE + 1;
+        pageSize = Math.min(pageSize, tracksCount);
+        MessageBuilder mb = localMessageBuilder();
+        int maxPages = (int) Math.ceil(((double) tracksCount - 1d)) / pageSize + 1;
 
         page = Math.max(page, 1);
         page = Math.min(page, maxPages);
 
-        int i = (page - 1) * PAGE_SIZE;
-        int listEnd = (page - 1) * PAGE_SIZE + PAGE_SIZE;
+        int i = (page - 1) * pageSize;
+        int listEnd = (page - 1) * pageSize + pageSize;
         listEnd = Math.min(listEnd, tracksCount);
 
         int numberLength = Integer.toString(listEnd).length();
@@ -151,13 +170,33 @@ public class ListCommand extends JCommand implements IMusicCommand {
 
         mb.append("\n").append(desc);
 
-        context.reply(mb.build());
+        if (pageSize > PAGE_SIZE) {
+            TextUtils.postToPasteService(mb.build())
+                    .thenApply(pasteUrl -> {
+                        if (pasteUrl.isPresent()) {
+                            String url = pasteUrl.get() + ".fredboat";
+                            return context.i18nFormat("exportPlayQueueResulted", url);
+                        } else {
+                            return context.i18nFormat("exportPlayQueueFailed", PAGE_SIZE);
+                        }
+                    })
+                    .thenAccept(context::reply)
+                    .whenComplete((ignored, t) -> {
+                        if (t != null) {
+                            TextUtils.handleException("Failed to export to any paste service", t, context);
+                        }
+                    });
+
+
+        } else {
+            context.reply(mb.build());
+        }
 
     }
 
     @Nonnull
     @Override
     public String help(@Nonnull Context context) {
-        return "{0}{1} (page)\n#" + context.i18n("helpListCommand");
+        return "{0}{1} (page) (pageSize)\n#" + context.i18n("helpListCommand");
     }
 }
