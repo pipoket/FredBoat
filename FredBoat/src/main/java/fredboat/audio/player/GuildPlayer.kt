@@ -178,7 +178,7 @@ class GuildPlayer(
             log.error("Guild player error", t)
         }
         val activeTextChannel = activeTextChannel
-        activeTextChannel?.send("Something went wrong!\n${t.message}")?.subscribe()
+        activeTextChannel?.send("★★★★★★★★★★★★★★★★★★ <@98221130984230912> Something went wrong! \n${t.message}")?.subscribe()
     }
 
     fun joinChannel(usr: Member) {
